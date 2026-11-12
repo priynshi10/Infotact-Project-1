@@ -1,0 +1,22 @@
+{
+  "plot_path": "data/plots/acoustic_spectrogram/sos_fan_rpm.png",
+  "source_mode": "SYNTHETIC SIMULATION",
+  "sensor_id": "FAN-SIM-01 (SOFTWARE MODEL)",
+  "capture_timestamp_iso": "2026-11-12T18:20:18Z",
+  "capture_timestamp_epoch": 1794507618.4217188,
+  "sample_rate_hz": 50.0,
+  "center_freq_hz": null,
+  "recording_duration_sec": 7.4,
+  "sample_count": 371,
+  "raw_data_path": "/app/applet/data/mock_fan/rpm/sos_fan_rpm_timeline.csv",
+  "raw_data_sha256": "061f63041d9f01030e4c66c7bb62c4c677b531c27038c4ef54ce8735a03ed897",
+  "device_verified": false,
+  "detection_event_type": "FAN_RPM_SIMULATION",
+  "metrics": {
+    "base_rpm": 1200.0,
+    "low_rpm": 900.0,
+    "high_rpm": 1800.0,
+    "message": "SOS"
+  },
+  "notes": "Software simulation of aerodynamic fan speed profile for laboratory detection calibration."
+}

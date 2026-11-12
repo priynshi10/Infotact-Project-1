@@ -1,0 +1,6 @@
+{
+  "name": "AetherHound",
+  "description": "Air-Gapped RF & Acoustic Covert Channel Detector - Real-Time Hardware Acquisition, Signal Processing & Covert Pattern Detection",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
