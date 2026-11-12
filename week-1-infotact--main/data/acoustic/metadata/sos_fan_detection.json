@@ -1,0 +1,21 @@
+{
+  "plot_path": "data/plots/acoustic_waveform/sos_fan_detection.png",
+  "source_mode": "SYNTHETIC SIMULATION",
+  "sensor_id": "MIC-01 (VIRTUAL RECEIVER)",
+  "capture_timestamp_iso": "2026-11-12T18:20:16Z",
+  "capture_timestamp_epoch": 1794507616.9528592,
+  "sample_rate_hz": 44100.0,
+  "center_freq_hz": null,
+  "recording_duration_sec": 7.383945578231293,
+  "sample_count": 325632,
+  "raw_data_path": "/app/applet/data/acoustic/raw/sos_fan_detection_capture.wav",
+  "raw_data_sha256": "2f3b3966ba2e2a63935b6cda690f9c75cd6161bc4b7f49f163e836877cc6ef86",
+  "device_verified": false,
+  "detection_event_type": "ACOUSTIC_MORSE_PATTERN",
+  "metrics": {
+    "duration_sec": 7.38,
+    "match_score": 0.89,
+    "target_pattern": "SOS"
+  },
+  "notes": "Captured from receiver stream. Authenticated as SYNTHETIC SIMULATION."
+}

@@ -1,0 +1,1097 @@
+# AETHERHOUND – WEEK 1 MASTER IMPLEMENTATION PROMPT
+## Real-Time Hardware Acquisition, Signal Processing & Covert Pattern Detection
+
+PROJECT: AetherHound
+FULL NAME: Air-Gapped RF & Acoustic Covert Channel Detector
+DOMAIN: Hardware Security / Signals Intelligence (SIGINT)
+DEVELOPMENT PHASE: WEEK 1 ONLY
+
+==================================================
+1. PROJECT OBJECTIVE
+==================================================
+
+Develop a working real-time hardware monitoring and detection prototype for AetherHound.
+
+The objective is to capture live electromagnetic RF signals and acoustic signals from a monitored environment, process both streams continuously, and identify unusual signal patterns while acquisition is running.
+
+This is NOT a simple recording application.
+
+The application must continuously acquire, process, analyze and detect signals in real time.
+
+Week 1 has exactly TWO primary modules:
+
+MODULE 1: HARDWARE SETUP + REAL-TIME RF AND ACOUSTIC MONITORING
+
+MODULE 2: BENIGN CPU FAN MORSE-CODE SIMULATOR + REAL-TIME PATTERN DETECTION
+
+The two modules must work independently and together.
+
+The application must work with actual hardware when connected.
+
+A separate test mode must allow detection testing without physical SDR hardware.
+
+Do not build the React dashboard, FastAPI platform, database, ML autoencoder, advanced threat intelligence or other future-week components.
+
+==================================================
+2. TECHNOLOGY STACK
+==================================================
+
+Programming Language:
+- Python 3.11+
+
+Hardware and Acquisition:
+- RTL-SDR
+- pyrtlsdr / rtlsdr
+- PyAudio
+- Raspberry Pi 4 / Raspberry Pi 5
+- USB microphone
+- Compatible microphone array
+
+Signal Processing:
+- NumPy
+- SciPy
+- FFT
+- STFT
+- Welch Power Spectral Density
+- Band-pass filtering
+- Window functions
+- RMS energy
+- Spectral analysis
+- Periodicity detection
+
+Visualization:
+- Matplotlib
+- Live-updating plots where appropriate
+- Terminal monitoring interface using Rich
+
+Audio:
+- SoundFile
+- PyAudio
+- Optional sounddevice for controlled speaker playback
+
+Storage:
+- NumPy NPY
+- WAV
+- CSV
+- JSON
+- JSONL event logs
+
+Testing:
+- Pytest
+
+IMPORTANT:
+Use RTL-SDR through the rtlsdr Python library. Do not assume that HackRF One is compatible with this library.
+
+Keep the SDR acquisition interface modular so that HackRF can be supported in a later phase.
+
+==================================================
+3. MODULE 1 – REAL-TIME HARDWARE SETUP
+==================================================
+
+A. HARDWARE REQUIREMENTS
+
+Support:
+
+1. RTL-SDR USB receiver with antenna.
+2. Raspberry Pi 4 or Raspberry Pi 5 / Linux computer.
+3. USB microphone.
+4. Optional microphone array.
+5. Optional ultrasonic microphone.
+6. Optional dedicated external 4-wire PWM test fan with tachometer feedback.
+
+Create a hardware configuration system.
+
+Detect available devices before starting monitoring.
+
+Never report a device as connected unless its actual connection has been verified.
+
+B. HARDWARE DIAGNOSTICS
+
+Create:
+
+hardware/device_check.py
+
+Implement:
+
+- RTL-SDR device discovery.
+- RTL-SDR device identification.
+- Microphone discovery.
+- Audio input device enumeration.
+- Sampling-rate capability checks.
+- PyAudio availability check.
+- SDR library availability check.
+- Device configuration validation.
+
+Display a terminal report:
+
+AETHERHOUND HARDWARE DIAGNOSTICS
+
+[RTL-SDR]
+Device: RTL2832U
+Status: CONNECTED / DISCONNECTED
+Center Frequency: Configured value
+Sample Rate: Configured value
+
+[MICROPHONE]
+Device: Detected microphone name
+Status: CONNECTED / DISCONNECTED
+Sample Rate: Configured value
+Channels: Configured value
+
+[LIBRARIES]
+PyRTLSDR: AVAILABLE / ERROR
+PyAudio: AVAILABLE / ERROR
+NumPy: AVAILABLE / ERROR
+SciPy: AVAILABLE / ERROR
+
+SYSTEM READINESS:
+READY / PARTIALLY READY / NOT READY
+
+Handle unavailable hardware gracefully.
+
+==================================================
+4. REAL-TIME RF ACQUISITION
+==================================================
+
+Create:
+
+hardware/rf_capture.py
+
+Objective:
+
+Continuously capture actual RF IQ samples using RTL-SDR and send them to the RF processing engine.
+
+Implementation requirements:
+
+1. Initialize RTL-SDR.
+2. Configure center frequency.
+3. Configure supported sample rate.
+4. Configure RF gain.
+5. Configure frequency correction where applicable.
+6. Use continuous asynchronous sample acquisition.
+7. Use read_samples_async() or an equivalent supported continuous acquisition method.
+8. Process incoming IQ sample chunks.
+9. Timestamp every processing window.
+10. Maintain a bounded buffer.
+11. Avoid blocking the acquisition callback with expensive processing.
+12. Send sample chunks to a thread-safe processing queue.
+13. Handle device disconnection.
+14. Support graceful stop and cleanup.
+
+Use configurable defaults appropriate for the connected RTL-SDR.
+
+RF CONFIGURATION:
+
+- Center frequency.
+- Sample rate.
+- Gain.
+- FFT size.
+- Samples per processing window.
+- Detection update interval.
+
+Validate hardware-supported configuration values.
+
+Do not transmit RF signals.
+
+The SDR must operate in receive-only mode.
+
+A. LIVE RF SPECTRUM PROCESSING
+
+For every incoming sample window:
+
+1. Apply a suitable window function.
+2. Calculate FFT.
+3. Calculate power spectrum.
+4. Convert power to dB.
+5. Estimate the local noise floor.
+6. Identify spectral peaks.
+7. Calculate peak-to-noise-floor deviation.
+8. Track frequency changes over time.
+9. Identify unusual signal bursts.
+10. Update the live RF monitoring output.
+
+Use proper frequency-bin calculations based on actual center frequency and sampling rate.
+
+B. RF ANOMALY DETECTION
+
+Create:
+
+detection/rf_detector.py
+
+Implement real-time statistical detection.
+
+The detector should:
+
+- Learn a rolling baseline from observed RF spectrum windows.
+- Maintain robust median and median absolute deviation statistics.
+- Identify significant spectral deviations.
+- Detect persistent unusual frequency peaks.
+- Detect sudden unexpected power changes.
+- Detect unusual periodic signal activity where measurable.
+- Avoid flagging every small fluctuation.
+- Support configurable thresholds.
+- Apply minimum-duration and persistence checks.
+- Use hysteresis to avoid repeated alert flickering.
+
+Generate an RF detection event when a configurable anomaly condition is met.
+
+Example:
+
+[AETHERHOUND RF ALERT]
+
+Event: Unusual RF Spectral Activity
+Sensor: SDR-01
+Frequency: Detected frequency
+Signal Level: Measured power
+Noise Floor: Estimated noise floor
+Deviation: Calculated deviation
+Timestamp: Actual timestamp
+Status: SUSPICIOUS RF ACTIVITY
+
+Do not claim that an RF spike proves covert data transmission.
+
+C. LIVE RF WATERFALL
+
+Maintain a rolling history of processed RF spectra.
+
+Display:
+
+- Frequency axis.
+- Time axis.
+- Signal intensity.
+- Persistent spectral activity.
+- Anomaly markers.
+
+Use a bounded history to prevent excessive memory consumption.
+
+==================================================
+5. REAL-TIME ACOUSTIC ACQUISITION
+==================================================
+
+Create:
+
+hardware/acoustic_capture.py
+
+Objective:
+
+Continuously capture microphone audio and analyze it while the microphone is recording.
+
+Use PyAudio callback-based streaming.
+
+Do not only record fixed-duration audio files.
+
+Requirements:
+
+1. Enumerate audio input devices.
+2. Allow microphone selection.
+3. Configure sample rate.
+4. Configure channels.
+5. Configure audio format.
+6. Configure frames per buffer.
+7. Start continuous input streaming.
+8. Receive incoming audio chunks.
+9. Attach timestamps to processing windows.
+10. Place chunks in a bounded queue.
+11. Pass chunks to the acoustic processor.
+12. Save selected recordings in WAV format.
+13. Support immediate stop and graceful stream cleanup.
+14. Handle device disconnection and overflow conditions.
+
+Support ordinary microphone monitoring and ultrasonic-capable microphone monitoring where hardware permits.
+
+IMPORTANT:
+Check actual microphone frequency response and supported sample rate.
+
+Do not claim ultrasonic detection using an ordinary microphone.
+
+A. LIVE ACOUSTIC SIGNAL PROCESSING
+
+Create:
+
+dsp/acoustic_processor.py
+
+For every incoming audio window, calculate:
+
+- RMS energy.
+- Peak amplitude.
+- Dominant frequency.
+- Spectral centroid.
+- Spectral bandwidth.
+- Zero-crossing rate.
+- FFT spectrum.
+- STFT spectrogram.
+- Periodicity indicators.
+
+Use suitable filtering to reduce background noise without removing the signal characteristics being monitored.
+
+Maintain a rolling baseline for normal acoustic conditions.
+
+B. LIVE ACOUSTIC ANOMALY DETECTOR
+
+Create:
+
+detection/acoustic_detector.py
+
+Implement real-time detection of:
+
+1. Unexpected repetitive acoustic pulses.
+2. Periodic fan-speed-related acoustic modulation.
+3. Unusual amplitude changes.
+4. Frequency shifts.
+5. Repeated short-duration bursts.
+6. Structured pulse sequences.
+
+The detector must distinguish ordinary environmental changes from a potentially structured pattern using configurable rules.
+
+Use:
+
+- Envelope extraction.
+- Energy thresholding.
+- Peak detection.
+- Pulse-duration measurement.
+- Inter-pulse interval analysis.
+- Repetition analysis.
+- Baseline comparison.
+
+Generate an event whenever a suspicious pattern is detected.
+
+Example:
+
+[AETHERHOUND ACOUSTIC ALERT]
+
+Event: Structured Acoustic Pattern Detected
+Sensor: MIC-01
+Dominant Frequency: Measured frequency
+RMS Energy: Measured RMS
+Pulse Count: Detected count
+Pattern Duration: Measured duration
+Timestamp: Actual timestamp
+Status: SUSPICIOUS ACOUSTIC ACTIVITY
+
+==================================================
+6. MODULE 2 – BENIGN CPU FAN MORSE-CODE SIMULATOR
+==================================================
+
+Create:
+
+mock_malware/fan_pattern_simulator.py
+
+This module demonstrates how a controlled fan-speed pattern could create an identifiable acoustic signal.
+
+This is a benign laboratory testing utility, not malware.
+
+IMPORTANT SAFETY REQUIREMENTS:
+
+The default implementation must not modify the actual computer CPU fan.
+
+Do not manipulate motherboard fan controllers, disable thermal protections, override firmware safety mechanisms or force unsafe fan speeds.
+
+Provide two operating modes:
+
+MODE A: SOFTWARE SIMULATION MODE (DEFAULT)
+
+- Generate simulated fan RPM changes.
+- Convert a predefined Morse message into timing events.
+- Generate a fan-like acoustic waveform.
+- Display the RPM timeline.
+- Generate audio for speaker playback.
+- Allow the microphone to capture the generated acoustic signal.
+
+MODE B: EXTERNAL TEST FAN MODE (OPTIONAL)
+
+Only support a dedicated external laboratory fan through a documented hardware interface.
+
+Requirements:
+- Explicit user confirmation.
+- Configured safe minimum and maximum RPM.
+- Hardware-supported PWM interface.
+- RPM feedback through tachometer where available.
+- Temperature monitoring where applicable.
+- Immediate emergency stop.
+- Automatic return to a safe state.
+- No interference with the computer's CPU cooling system.
+
+If safe hardware control cannot be verified, disable this mode and use simulation.
+
+A. MORSE CODE GENERATOR
+
+Create:
+
+mock_malware/morse_encoder.py
+
+Use a predefined test message:
+
+SOS
+
+Morse encoding:
+
+S = ...
+O = ---
+S = ...
+
+Timing:
+
+Dot = 1 time unit.
+Dash = 3 time units.
+Gap between elements of the same letter = 1 time unit.
+Gap between letters = 3 time units.
+Gap between words = 7 time units.
+
+Provide configurable timing.
+
+B. RPM PATTERN SIMULATION
+
+Create a simulated fan-speed profile.
+
+Example values:
+
+Base RPM: 1200
+Low RPM: 900
+High RPM: 1800
+Dot duration: 0.2 seconds
+Dash duration: 0.6 seconds
+
+These values are for the software simulation only.
+
+Convert the Morse sequence into an RPM timeline.
+
+Generate:
+- RPM versus time.
+- Pulse state timeline.
+- Morse symbol visualization.
+- CSV event timeline.
+
+C. ACOUSTIC WAVEFORM GENERATION
+
+Create:
+
+mock_malware/audio_generator.py
+
+Generate a synthetic fan-like acoustic signal based on the RPM timeline.
+
+Include:
+
+- Background server-room noise.
+- Fan-like tonal components.
+- Speed-dependent frequency variation.
+- Amplitude modulation.
+- Morse timing structure.
+- Configurable noise level.
+
+Generate a playable WAV file.
+
+Clearly label the signal as SYNTHETIC.
+
+Do not claim that synthetic audio exactly replicates a real physical CPU fan.
+
+D. SPEAKER PLAYBACK
+
+Implement optional local speaker playback of the generated SOS acoustic signal.
+
+Requirements:
+- Explicit user start.
+- Adjustable playback volume.
+- Adjustable playback speed only if timing remains documented.
+- Start and stop controls.
+- No automatic playback.
+- No excessive volume.
+
+The playback should allow the physical microphone to receive the acoustic pattern.
+
+==================================================
+7. REAL-TIME SOS PATTERN RECOGNITION
+==================================================
+
+Create:
+
+detection/morse_detector.py
+
+This is a key requirement.
+
+The microphone must be able to detect the SOS acoustic pattern while the audio is being captured.
+
+Do not wait until the entire WAV file has been recorded.
+
+Implementation:
+
+1. Continuously receive microphone samples.
+2. Extract the signal envelope.
+3. Identify active acoustic pulses.
+4. Measure pulse durations.
+5. Measure gaps between pulses.
+6. Classify short pulses as dots.
+7. Classify long pulses as dashes.
+8. Identify character boundaries.
+9. Reconstruct the Morse sequence.
+10. Compare the detected sequence with the expected SOS pattern.
+
+Use configurable timing tolerances.
+
+Implement:
+- Pulse detection.
+- Adaptive energy threshold.
+- Minimum pulse duration.
+- Maximum pulse duration.
+- Gap classification.
+- Sequence matching.
+- Detection confidence or matching score with a clearly documented calculation.
+
+The detector should support imperfect timing and reasonable background noise.
+
+Avoid matching SOS simply because the test script is running.
+
+The actual microphone signal must contain the recognized pattern.
+
+If the microphone is not receiving the pattern, the detector must not generate a successful physical detection event.
+
+Example successful event:
+
+[AETHERHOUND PATTERN DETECTED]
+
+Sensor: MIC-01
+Pattern: SOS
+Decoded Morse: ... --- ...
+Detection Method: Acoustic Pulse Timing
+Match Score: Calculated value
+Timestamp: Actual detection timestamp
+Source: LIVE MICROPHONE
+Result: PATTERN RECOGNIZED
+
+Also support:
+
+Source: SYNTHETIC TEST
+Result: PATTERN GENERATED
+
+These two sources must never be confused.
+
+==================================================
+8. REAL-TIME MONITORING ENGINE
+==================================================
+
+Create:
+
+core/realtime_engine.py
+
+This engine coordinates the two acquisition systems.
+
+Requirements:
+
+- Start RF acquisition.
+- Start microphone acquisition.
+- Run RF processing continuously.
+- Run acoustic processing continuously.
+- Run RF anomaly detection.
+- Run acoustic anomaly detection.
+- Run Morse pattern recognition.
+- Maintain independent processing pipelines.
+- Use bounded thread-safe queues.
+- Prevent one sensor from blocking another.
+- Handle processing overload.
+- Maintain timestamps.
+- Support graceful shutdown.
+
+Both sensors should work simultaneously.
+
+Use threading, asynchronous processing or multiprocessing where appropriate.
+
+The SDR acquisition callback must remain lightweight.
+
+Do not perform expensive FFT calculations or file writes directly inside hardware callbacks.
+
+Use independent worker threads for DSP and detection.
+
+Maintain configurable processing windows and update intervals.
+
+==================================================
+9. REAL-TIME TERMINAL INTERFACE
+==================================================
+
+Create:
+
+interface/live_monitor.py
+
+Implement a professional terminal monitoring interface using Rich.
+
+The interface should display:
+
+AETHERHOUND
+AIR-GAPPED RF & ACOUSTIC MONITORING
+
+SYSTEM STATUS:
+RF SENSOR: CONNECTED / DISCONNECTED
+MIC SENSOR: CONNECTED / DISCONNECTED
+
+RF MONITORING:
+Center Frequency
+Sample Rate
+Current Noise Floor
+Peak Signal Level
+Spectral Anomalies
+Last RF Event
+
+ACOUSTIC MONITORING:
+Microphone
+Sample Rate
+RMS Energy
+Dominant Frequency
+Detected Pulse Count
+Last Acoustic Event
+
+DETECTION STATUS:
+RF: NORMAL / SUSPICIOUS
+ACOUSTIC: NORMAL / SUSPICIOUS
+MORSE: NO PATTERN / PATTERN DETECTED
+
+RECENT EVENTS:
+Timestamp | Sensor | Event | Evidence
+
+The interface must refresh continuously.
+
+Provide keyboard controls:
+
+S = Start monitoring
+P = Pause monitoring
+R = Resume monitoring
+X = Stop monitoring
+Q = Quit
+
+Do not build a web dashboard.
+
+==================================================
+10. EVENT LOGGING AND DATA STORAGE
+==================================================
+
+Create structured logging.
+
+Directory:
+
+data/
+  rf/
+    raw/
+    processed/
+    metadata/
+  acoustic/
+    raw/
+    processed/
+    metadata/
+  mock_fan/
+    audio/
+    rpm/
+    metadata/
+  events/
+    rf_events.jsonl
+    acoustic_events.jsonl
+    morse_events.jsonl
+    system_events.jsonl
+  plots/
+    rf_spectrum/
+    rf_waterfall/
+    acoustic_waveform/
+    acoustic_spectrogram/
+
+Save:
+- Raw IQ sample chunks or configurable recording segments.
+- RF spectrum snapshots.
+- Raw WAV recordings.
+- Acoustic spectrum snapshots.
+- Spectrograms.
+- RPM simulation timeline.
+- Detection event logs.
+- Hardware configuration.
+- Timestamps.
+
+Do not save every high-speed sample to disk continuously by default.
+
+Implement configurable rolling buffers and recording options.
+
+Keep live detection independent from disk writing.
+
+==================================================
+11. VISUALIZATION
+==================================================
+
+Use Matplotlib for live signal visualizations.
+
+Create:
+
+1. Live RF frequency spectrum.
+2. Live RF waterfall.
+3. Live acoustic waveform.
+4. Live acoustic frequency spectrum.
+5. Live acoustic spectrogram.
+6. Fan RPM timeline.
+7. Morse pulse timeline.
+
+The visualizations should update from actual processing buffers.
+
+Do not use randomly generated charts.
+
+Clearly distinguish:
+- Hardware-collected data.
+- Synthetic generated data.
+- Recorded test data.
+
+Use timestamps and appropriate frequency units.
+
+==================================================
+12. PROJECT DIRECTORY STRUCTURE
+==================================================
+
+Create this focused structure:
+
+aetherhound/
+│
+├── hardware/
+│   ├── __init__.py
+│   ├── device_check.py
+│   ├── rf_capture.py
+│   ├── acoustic_capture.py
+│   └── config.py
+│
+├── dsp/
+│   ├── __init__.py
+│   ├── rf_processor.py
+│   ├── acoustic_processor.py
+│   ├── fft_engine.py
+│   ├── spectrogram.py
+│   └── feature_extractor.py
+│
+├── detection/
+│   ├── __init__.py
+│   ├── rf_detector.py
+│   ├── acoustic_detector.py
+│   └── morse_detector.py
+│
+├── mock_malware/
+│   ├── __init__.py
+│   ├── fan_pattern_simulator.py
+│   ├── morse_encoder.py
+│   └── audio_generator.py
+│
+├── core/
+│   ├── __init__.py
+│   └── realtime_engine.py
+│
+├── interface/
+│   ├── __init__.py
+│   └── live_monitor.py
+│
+├── scripts/
+│   ├── hardware_test.py
+│   └── week1_demo.py
+│
+├── data/
+│   ├── rf/
+│   ├── acoustic/
+│   ├── mock_fan/
+│   ├── events/
+│   └── plots/
+│
+├── tests/
+│   ├── test_rf_detector.py
+│   ├── test_acoustic_detector.py
+│   ├── test_morse_detector.py
+│   ├── test_morse_encoder.py
+│   ├── test_audio_generator.py
+│   └── test_realtime_engine.py
+│
+├── requirements.txt
+├── .env.example
+├── .gitignore
+└── README.md
+
+==================================================
+13. TESTING REQUIREMENTS
+==================================================
+
+Create tests for:
+
+RF:
+- IQ sample processing.
+- FFT calculations.
+- Noise floor estimation.
+- Spectral peak detection.
+- RF anomaly thresholding.
+- Continuous processing.
+
+ACOUSTIC:
+- Microphone device enumeration.
+- Audio stream initialization.
+- RMS calculations.
+- Frequency extraction.
+- Pulse detection.
+- Continuous audio processing.
+
+MORSE:
+- Correct SOS encoding.
+- Dot and dash duration.
+- Inter-symbol timing.
+- SOS sequence recognition.
+- Background noise tolerance.
+- Incorrect sequence rejection.
+
+INTEGRATION:
+- Simultaneous RF and audio acquisition.
+- Independent processing queues.
+- Event generation.
+- Graceful shutdown.
+- Device disconnection handling.
+- Real-time simulation workflow.
+
+Hardware tests must be optional.
+
+The unit test suite must work without physical hardware.
+
+==================================================
+14. WEEK 1 END-TO-END DEMONSTRATION
+==================================================
+
+Create:
+
+scripts/week1_demo.py
+
+The demo should provide two separate execution options.
+
+OPTION A: HARDWARE MODE
+
+1. Detect RTL-SDR.
+2. Detect the microphone.
+3. Start continuous RF acquisition.
+4. Start continuous microphone acquisition.
+5. Start RF DSP processing.
+6. Start acoustic DSP processing.
+7. Start both detection engines.
+8. Display live monitoring information.
+9. Save selected recordings and detection events.
+10. Allow the user to stop monitoring.
+
+OPTION B: LIVE ACOUSTIC TEST MODE
+
+This mode is important when SDR hardware is unavailable.
+
+1. Initialize the real microphone.
+2. Generate the SOS fan-pattern acoustic signal.
+3. Play the signal through the local speaker after explicit user confirmation.
+4. Record the acoustic signal through the actual microphone.
+5. Process microphone input continuously.
+6. Detect individual pulses.
+7. Reconstruct Morse timing.
+8. Recognize SOS.
+9. Display a real-time detection alert.
+10. Save the actual microphone recording and detection event.
+
+The microphone must independently detect the pattern.
+
+Do not directly pass the generated Morse sequence into the detector as a shortcut.
+
+The detector must analyze the captured audio samples.
+
+OPTION C: SOFTWARE TEST MODE
+
+If hardware is unavailable:
+
+1. Generate synthetic RF IQ samples.
+2. Generate synthetic acoustic samples.
+3. Feed both into the same DSP and detection engines.
+4. Simulate normal and abnormal patterns.
+5. Verify detection results.
+6. Clearly label all results as synthetic.
+
+Do not present software-generated data as physical sensor measurements.
+
+==================================================
+15. PERFORMANCE REQUIREMENTS
+==================================================
+
+The application must prioritize responsive detection.
+
+Implement:
+
+- Continuous processing.
+- Bounded queues.
+- Configurable FFT windows.
+- Configurable audio frames.
+- Non-blocking acquisition.
+- Efficient NumPy operations.
+- Independent RF and acoustic workers.
+- Processing latency measurement.
+- Dropped-buffer monitoring.
+- Memory usage control.
+
+Display:
+
+- Acquisition rate.
+- Processing rate.
+- Detection latency.
+- Queue utilization.
+- Dropped samples or buffers, where measurable.
+
+Target a configurable detection update interval of approximately 100–500 milliseconds where the hardware and processing load permit.
+
+Measure actual latency instead of claiming guaranteed performance.
+
+==================================================
+16. README AND DOCUMENTATION
+==================================================
+
+Generate a detailed README containing:
+
+1. Project introduction.
+2. Week 1 objectives.
+3. Hardware requirements.
+4. RTL-SDR installation.
+5. PyRTLSDR installation.
+6. PyAudio installation.
+7. Microphone configuration.
+8. Raspberry Pi configuration.
+9. Python environment setup.
+10. RF monitoring instructions.
+11. Acoustic monitoring instructions.
+12. Real-time detection explanation.
+13. SOS simulator instructions.
+14. Speaker and microphone testing.
+15. Software test mode.
+16. Output directory explanation.
+17. Troubleshooting.
+18. Known hardware limitations.
+
+Provide terminal commands for Windows and Linux/Raspberry Pi.
+
+==================================================
+17. STRICT DEVELOPMENT RULES
+==================================================
+
+- Implement actual working Python scripts.
+- Do not stop after generating architecture.
+- Do not generate fake hardware connection status.
+- Do not use prerecorded files as substitutes for live hardware acquisition.
+- Do not use random anomaly scores.
+- Do not use random charts.
+- Do not create fake detection events.
+- Do not confuse synthetic and real recordings.
+- Do not block acquisition while processing data.
+- Do not silently discard processing errors.
+- Do not implement offensive malware.
+- Do not manipulate the host computer CPU fan.
+- Do not disable thermal protections.
+- Do not build a frontend dashboard.
+- Do not build an ML autoencoder.
+- Do not build a database or API server.
+
+Implement real-time DSP-based detection only.
+
+==================================================
+18. IMPLEMENTATION SEQUENCE
+==================================================
+
+Follow this exact development order:
+
+PHASE 1:
+Inspect environment, Python installation, operating system and connected hardware.
+
+PHASE 2:
+Create project structure and install dependencies.
+
+PHASE 3:
+Implement RTL-SDR continuous acquisition.
+
+PHASE 4:
+Implement PyAudio continuous acquisition.
+
+PHASE 5:
+Implement RF and acoustic DSP pipelines.
+
+PHASE 6:
+Implement independent real-time RF and acoustic detection engines.
+
+PHASE 7:
+Implement SOS Morse encoder and benign fan RPM simulator.
+
+PHASE 8:
+Implement synthetic fan acoustic generation and speaker playback.
+
+PHASE 9:
+Implement real-time microphone-based SOS detection.
+
+PHASE 10:
+Integrate both monitoring pipelines into the real-time engine.
+
+PHASE 11:
+Create the terminal monitoring interface.
+
+PHASE 12:
+Implement tests, documentation and end-to-end demonstrations.
+
+After each phase:
+- List files created.
+- Explain the implementation.
+- Run relevant tests.
+- Fix errors.
+- Verify actual functionality.
+- Continue to the next phase.
+
+Do not stop after providing a plan.
+
+==================================================
+19. FINAL ACCEPTANCE CRITERIA
+==================================================
+
+Week 1 is complete only when:
+
+[ ] RTL-SDR can continuously capture real IQ samples when connected.
+
+[ ] RF FFT and spectrum processing operate on incoming samples.
+
+[ ] RF anomaly detection works during live acquisition.
+
+[ ] PyAudio continuously captures real microphone input.
+
+[ ] Acoustic waveform and spectrogram update during recording.
+
+[ ] Acoustic anomaly detection works during live acquisition.
+
+[ ] SOS Morse sequence can be generated.
+
+[ ] Fan RPM simulation produces the correct Morse timing.
+
+[ ] Synthetic fan acoustic audio is generated.
+
+[ ] Speaker playback is available with user confirmation.
+
+[ ] The real microphone can capture the test audio.
+
+[ ] The microphone-based detector recognizes SOS while recording.
+
+[ ] Incorrect patterns are not reported as successful SOS detections.
+
+[ ] RF and acoustic acquisition can operate simultaneously.
+
+[ ] Detection events contain timestamps and measurable evidence.
+
+[ ] Hardware and synthetic data are clearly distinguished.
+
+[ ] Terminal monitoring interface works.
+
+[ ] Data and event logs are saved correctly.
+
+[ ] Tests pass without requiring physical hardware.
+
+[ ] README and hardware setup documentation are complete.
+
+==================================================
+FINAL INSTRUCTION
+==================================================
+
+Build ONLY AetherHound Week 1.
+
+The most important objective is REAL-TIME DETECTION.
+
+I must be able to connect an RTL-SDR and microphone, start monitoring, observe incoming signals, detect suspicious RF or acoustic patterns and receive alerts while acquisition is running.
+
+The SOS test must work through a physical microphone, not just by analyzing a prerecorded WAV file.
+
+Prioritize actual hardware integration, continuous acquisition, signal processing, low-latency detection and reliable testing.
+
+Do not start future-week ML, dashboard, API or database development.
+
+Inspect the workspace and begin implementing the actual project now.
