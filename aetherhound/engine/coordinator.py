@@ -18,6 +18,7 @@ from aetherhound.ml.evaluator import AnomalyEvaluator
 from aetherhound.engine.triangulator import RackTriangulator
 from aetherhound.engine.demodulator import CovertChannelDemodulator
 from aetherhound.engine.alert_manager import AlertManager, IncidentReport
+from aetherhound.engine.countermeasures import AcousticMaskingJammer, SIEMEventExporter
 
 class PipelineCoordinator:
     """
@@ -37,13 +38,18 @@ class PipelineCoordinator:
         self.triangulator = RackTriangulator(self.config.layout)
         self.demodulator = CovertChannelDemodulator()
         self.alert_manager = AlertManager(self.config.alerting)
+        self.jammer = AcousticMaskingJammer(self.config.acoustic.sample_rate)
+        self.siem_exporter = SIEMEventExporter()
 
         # Performance and state telemetry
         self.frames_processed = 0
         self.start_time = time.time()
         self.last_incident: Optional[IncidentReport] = None
         self.active_alert_flash = False
+        self.countermeasure_active = False
         self.latest_demodulated_text = ""
+        self.latest_cef_event: Optional[str] = None
+        self.latest_syslog_event: Optional[str] = None
         self._auto_calibrate()
 
     def _auto_calibrate(self, warmup_frames: int = 15) -> None:
@@ -90,8 +96,9 @@ class PipelineCoordinator:
         ml_result = self.evaluator.evaluate_patch(spectrogram_patch)
         recon_error = ml_result["reconstruction_error"]
         threshold = ml_result["threshold"]
-        # Multi-modal detection: ML autoencoder reconstruction residual OR classical peak SNR anomaly
-        is_anomaly = ml_result["is_anomaly"] or (signal_metrics.get("peak_snr_db", 0.0) > 10.0)
+        # Multi-modal detection: ML autoencoder reconstruction residual OR covert band peak SNR anomaly
+        is_covert_peak = (signal_metrics.get("primary_peak_hz", 0.0) > 1000.0) and (signal_metrics.get("peak_snr_db", 0.0) > 10.0)
+        is_anomaly = ml_result["is_anomaly"] or is_covert_peak
 
         # 8. Spatial Triangulation & Pinpointing
         pinpointed_rack, confidence, (est_x, est_y) = self.triangulator.pinpoint_infected_rack(rssi_map)
@@ -121,8 +128,18 @@ class PipelineCoordinator:
             )
             if incident:
                 self.last_incident = incident
+                self.latest_cef_event = self.siem_exporter.format_cef(incident)
+                self.latest_syslog_event = self.siem_exporter.format_syslog_rfc5424(incident)
+
+            # Trigger autonomous acoustic noise masking countermeasure
+            self.countermeasure_active = True
+            _ = self.jammer.generate_masking_noise(
+                center_freq_hz=peak_freq,
+                duration_sec=size / self.config.acoustic.sample_rate
+            )
         else:
             self.active_alert_flash = False
+            self.countermeasure_active = False
 
         cycle_latency_ms = (time.perf_counter() - t0) * 1000.0
         self.frames_processed += 1
@@ -146,5 +163,7 @@ class PipelineCoordinator:
             "freq_bins": freq_bins,
             "rf_psd_db": rf_psd_db,
             "rf_freqs": rf_freqs,
-            "alert_flashing": self.active_alert_flash
+            "alert_flashing": self.active_alert_flash,
+            "countermeasure_active": self.countermeasure_active,
+            "cef_event": self.latest_cef_event
         }
