@@ -80,6 +80,30 @@ class RFProcessor:
         # Preserve original IQ samples
         raw_samples = np.asarray(samples).copy()
         self.latest_raw_iq = raw_samples
+        if raw_samples.size == 0:
+            empty_freqs = np.zeros(self.fft_size)
+            empty_spectrum = np.full(self.fft_size, -180.0)
+            proc_win = RFProcessedWindow(
+                window_id=window.window_id,
+                timestamp=window.timestamp,
+                center_freq_hz=fc,
+                sample_rate_hz=sr,
+                frequencies_hz=empty_freqs,
+                spectrum_db=empty_spectrum,
+                noise_floor_db=-180.0,
+                noise_std_db=0.5,
+                peaks=[],
+                max_peak_freq_hz=fc,
+                max_peak_power_db=-180.0,
+                max_deviation_db=0.0,
+                is_synthetic=window.is_synthetic,
+                source_type=window.source_type,
+            )
+            self.latest_filtered_iq = raw_samples.copy()
+            self.latest_frequencies_hz = empty_freqs
+            self.latest_spectrum_db = empty_spectrum
+            self.latest_processed = proc_win
+            return proc_win
 
         # RF FIR Low-Pass Filtering
         if self.config.rf_filter_enabled and sr > 0 and len(raw_samples) >= 3:

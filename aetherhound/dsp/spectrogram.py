@@ -29,6 +29,12 @@ class RollingWaterfallBuffer:
         timestamp: float,
     ) -> None:
         """Add a new processed spectral row to the waterfall."""
+        spectrum_db = np.asarray(spectrum_db).squeeze()
+        frequencies_hz = np.asarray(frequencies_hz).squeeze()
+        if spectrum_db.ndim != 1 or frequencies_hz.ndim != 1:
+            return
+        if len(spectrum_db) == 0 or len(frequencies_hz) != len(spectrum_db):
+            return
         # Resample or slice to num_bins if needed
         if len(spectrum_db) != self.num_bins:
             indices = np.linspace(0, len(spectrum_db) - 1, self.num_bins).astype(int)
@@ -94,8 +100,13 @@ def compute_stft_spectrogram(
 
     nperseg = min(nperseg, len(samples))
 
+    if nperseg < 2:
+        raise ValueError("nperseg must be at least 2")
+
     if noverlap is None:
         noverlap = nperseg // 2
+    else:
+        noverlap = min(int(noverlap), nperseg - 1)
 
     if noverlap < 0 or noverlap >= nperseg:
         raise ValueError("noverlap must be between 0 and nperseg - 1")

@@ -70,12 +70,36 @@ class AcousticProcessor:
         """
         samples = chunk.samples
         sr = chunk.sample_rate_hz
+        if len(np.asarray(samples)) == 0:
+            features = AcousticFeatures(
+                rms_energy=0.0,
+                peak_amplitude=0.0,
+                dominant_frequency_hz=0.0,
+                spectral_centroid_hz=0.0,
+                spectral_bandwidth_hz=0.0,
+                zero_crossing_rate=0.0,
+                periodicity_score=0.0,
+                snr_estimate_db=0.0,
+            )
+            return AcousticProcessedChunk(
+                chunk_id=chunk.chunk_id,
+                timestamp=chunk.timestamp,
+                sample_rate_hz=sr,
+                raw_samples=np.asarray(samples).copy(),
+                filtered_samples=np.asarray(samples).copy(),
+                envelope=np.zeros(0, dtype=np.float32),
+                features=features,
+                baseline_energy=0.0,
+                energy_ratio=0.0,
+                is_synthetic=chunk.is_synthetic,
+                source_type=chunk.source_type,
+            )
 
         # 1. Bandpass filter to suppress low rumble and ultra-high hiss
         try:
             filtered = signal.lfilter(self._filter_b, self._filter_a, samples)
         except Exception:
-            filtered = samples
+            filtered = np.asarray(samples).copy()
 
         # 2. Extract acoustic features
         features = extract_acoustic_features(filtered, sr, fft_size=min(len(filtered), 2048))

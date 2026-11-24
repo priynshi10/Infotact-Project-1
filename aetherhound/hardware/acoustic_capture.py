@@ -323,10 +323,12 @@ class AcousticCaptureDevice:
             phase = (phase + duration_per_chunk) % 1.0
 
             # Ambient acoustic noise (quiet room: -45 dBFS)
-            ambient_noise = rng.normal(0, 0.005, chunk_size)
+            ambient_noise = rng.normal(0, 0.008, chunk_size)
             # Low 120 Hz room / PSU transformer hum
             hum = 0.002 * np.sin(2 * np.pi * 120.0 * t)
-            samples = (ambient_noise + hum).astype(np.float32)
+            changing_tone_hz = 900.0 + 180.0 * np.sin(phase * 2 * np.pi)
+            changing_tone = 0.012 * np.sin(2 * np.pi * changing_tone_hz * t)
+            samples = (ambient_noise + hum + changing_tone).astype(np.float32)
 
             now = time.time()
             self._chunk_counter += 1

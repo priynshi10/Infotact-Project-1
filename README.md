@@ -398,3 +398,103 @@ npm run build
 - **PyAudio installation fails:** ensure PortAudio is installed for your OS and that your Python version has a compatible PyAudio wheel/build toolchain.
 - **HackRF available:** this RTL-SDR backend does not support HackRF; it will not claim the HackRF as an RTL-SDR.
 - **Physical verification:** unit tests mock hardware and the Morse workflow is validated using generated audio. Actual RTL-SDR IQ capture and physical microphone recording require the corresponding available device and driver.
+
+---
+
+## 21. Week 2 – Filtering, FFT/STFT, GNU Radio Architecture, and Live CLI Waterfall
+
+Week 2 adds a reusable DSP flowgraph and a continuously updating terminal waterfall while preserving the Week 1 acquisition, detector, API, and provenance implementations.
+
+### DSP architecture
+
+The main processing path is:
+
+```text
+source (hardware, recorded file, or synthetic data)
+  -> channel-specific filtering
+  -> windowed FFT or STFT
+  -> dB spectrum / spectrogram
+  -> rolling waterfall and detector processing
+```
+
+- [AcousticProcessor](aetherhound/dsp/acoustic_processor.py) filters real samples, extracts features, and updates acoustic STFT rows.
+- [RFProcessor](aetherhound/dsp/rf_processor.py) applies a configurable FIR low-pass to complex IQ samples, computes the windowed FFT, estimates noise, and updates the RF waterfall.
+- [FFT Engine](aetherhound/dsp/fft_engine.py) provides windowed real/complex FFT helpers, dB conversion, frequency-bin generation, and FIR low-pass filtering.
+- [Spectrogram](aetherhound/dsp/spectrogram.py) provides STFT, timestamped frames, complex-signal frequency mapping, and thread-safe rolling buffers.
+- [RealtimeEngine](aetherhound/core/realtime_engine.py) remains the integration point for live hardware, synthetic, and externally loaded evidence frames.
+
+### GNU Radio optional integration
+
+[SignalProcessingFlowgraph](aetherhound/dsp/flowgraph.py) defines a source, filtering, FFT/STFT, and output-stage architecture for both acoustic and RF samples. GNU Radio is optional:
+
+- If a `gnuradio` Python package is detected and GNU Radio is explicitly requested, the flowgraph reports `GNU RADIO (DETECTED; PYTHON DSP FALLBACK EXECUTING)`.
+- GNU Radio being detected does not mean hardware or a GNU Radio block graph was executed.
+- On Windows and in normal installations without GNU Radio, the implementation reports `PYTHON NUMPY/SCIPY FALLBACK`.
+- The NumPy/SciPy fallback is the actual DSP execution path and does not require RTL-SDR, PyAudio, or GNU Radio.
+
+This distinction is intentional: GNU Radio installation is never mandatory, and Python fallback is always available.
+
+### Filtering, FFT, and STFT
+
+RF filtering uses an odd-length Hamming-window FIR low-pass with configurable taps and cutoff. Complex IQ samples remain complex after filtering. Acoustic processing uses the existing bandpass plus low/high-frequency safeguards and the same rolling/STFT pipeline. FFT support includes:
+
+- Hann, Hamming, Blackman-Harris, Flat-top, and rectangular windows
+- Real one-sided acoustic FFT
+- Centered complex RF FFT
+- Actual sample-rate frequency bins
+- Linear magnitude to dB conversion
+- STFT frame size, overlap, window, matrix dimensions, and timestamped frames
+
+Empty, multidimensional, or invalid inputs are rejected or safely represented instead of producing NaNs in the terminal.
+
+### Live CLI waterfall
+
+The live terminal now consumes processed frames from `RealtimeEngine`, not decorative constants. It shows:
+
+- Header and operating mode: `DEMO`, `FILE`, or `HARDWARE`
+- Selected signal: `ACOUSTIC` or `RF`
+- Sampling frequency and current timestamp
+- Current spectrum, peak frequency, peak strength, and detection status
+- Processing latency and processed frame count
+- Filter configuration and processing backend
+- Rolling spectrogram with newest frames at the top
+
+Resize changes are handled by clipping spectrum and waterfall dimensions. Press `A` for acoustic, `F` for RF, `P`/`R` for pause/resume, `S` for start, and `Q` or `X` to stop.
+
+Run the live demo:
+
+```powershell
+python -m pip install -r requirements.txt
+python -m aetherhound.interface.live_monitor --mode demo --signal rf --seconds 10
+python -m aetherhound.interface.live_monitor --mode demo --signal acoustic --seconds 10
+python -m aetherhound.interface.live_monitor --mode demo --signal rf
+```
+
+The demo continuously generates changing RF/acoustic tones, noise, and spectra through the existing capture, processor, detector, and waterfall classes. No hardware is accessed in demo mode.
+
+Process a captured acoustic WAV or recorded IQ `.npy` file:
+
+```powershell
+python -m aetherhound.interface.live_monitor --mode file --signal acoustic --input data/acoustic/raw/example.wav --seconds 10
+python -m aetherhound.interface.live_monitor --mode file --signal rf --input data/rf/raw/example.npy --seconds 10
+```
+
+In file mode, WAV data is downmixed to mono chunks and `.npy` data is streamed as timestamped IQ windows through the existing RF/acoustic processors.
+
+Hardware mode uses available RTL-SDR and microphone devices; missing devices are reported and do not become fabricated measurements:
+
+```powershell
+python -m aetherhound.interface.live_monitor --mode hardware --signal rf
+python -m aetherhound.interface.live_monitor --mode hardware --signal acoustic
+```
+
+### Week 2 verification
+
+```powershell
+python -m pytest aetherhound/tests -q
+python -m compileall -q aetherhound
+python -m aetherhound.interface.live_monitor --mode demo --signal rf --seconds 2
+python -m aetherhound.interface.live_monitor --mode demo --signal acoustic --seconds 2
+```
+
+The test suite covers FIR filtering, real and complex FFT, frequency-bin accuracy, STFT dimensions and timestamps, rolling buffer updates, empty/invalid inputs, synthetic sources, flowgraph fallback detection, and CLI WAV file integration. GNU Radio hardware execution is not claimed unless a GNU Radio environment and an actual compatible block graph have been tested.

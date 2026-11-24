@@ -240,6 +240,11 @@ class RFCaptureDevice:
             i_noise = rng.normal(0, 0.04, chunk_size)
             q_noise = rng.normal(0, 0.04, chunk_size)
             samples = (i_noise + 1j * q_noise).astype(np.complex64)
+            t = np.arange(chunk_size) / sr
+            window_number = self._window_counter
+            drift_hz = 80_000.0 + 40_000.0 * np.sin(window_number * 0.08)
+            changing_carrier = 0.08 * np.exp(1j * 2 * np.pi * drift_hz * t)
+            samples = samples + changing_carrier.astype(np.complex64)
 
             # Check if test carrier burst active
             if self._inject_remaining_windows > 0:

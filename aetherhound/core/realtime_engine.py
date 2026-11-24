@@ -180,6 +180,47 @@ class RealtimeEngine:
         self._is_paused.clear()
         self._log_system_event("EngineResumed", "Signal monitoring resumed by user")
 
+    def process_external_rf_window(self, window) -> RFProcessedWindow:
+        """Process a timestamped externally loaded IQ window through the existing RF pipeline."""
+        t0 = time.perf_counter()
+        proc = self.rf_processor.process_window(window)
+        alert = self.rf_detector.update(proc)
+        latency_ms = (time.perf_counter() - t0) * 1000.0
+        with self._telemetry_lock:
+            self._telemetry.rf_center_freq_hz = window.center_freq_hz
+            self._telemetry.rf_sample_rate_hz = window.sample_rate_hz
+            self._telemetry.rf_processing_latency_ms = round(latency_ms, 2)
+            self._telemetry.rf_windows_processed += 1
+            self._telemetry.rf_noise_floor_db = round(proc.noise_floor_db, 2)
+            self._telemetry.rf_peak_power_db = round(proc.max_peak_power_db, 2)
+            self._telemetry.rf_peak_freq_hz = round(proc.max_peak_freq_hz, 1)
+            self._telemetry.rf_status = "SUSPICIOUS" if alert else "NORMAL"
+        if alert:
+            self._handle_rf_alert(alert)
+        return proc
+
+    def process_external_acoustic_chunk(self, chunk) -> AcousticProcessedChunk:
+        """Process an externally loaded audio chunk through the existing acoustic pipeline."""
+        t0 = time.perf_counter()
+        proc = self.acoustic_processor.process_chunk(chunk)
+        alert = self.acoustic_detector.update(proc)
+        morse_alert = self.morse_detector.process_chunk(proc)
+        latency_ms = (time.perf_counter() - t0) * 1000.0
+        with self._telemetry_lock:
+            self._telemetry.acoustic_sample_rate_hz = chunk.sample_rate_hz
+            self._telemetry.acoustic_processing_latency_ms = round(latency_ms, 2)
+            self._telemetry.acoustic_chunks_processed += 1
+            self._telemetry.acoustic_rms_energy = round(proc.features.rms_energy, 5)
+            self._telemetry.acoustic_dominant_freq_hz = round(proc.features.dominant_frequency_hz, 1)
+            self._telemetry.acoustic_status = "SUSPICIOUS" if alert else "NORMAL"
+            if morse_alert:
+                self._telemetry.morse_status = "PATTERN DETECTED"
+        if alert:
+            self._handle_acoustic_alert(alert)
+        if morse_alert:
+            self._handle_morse_alert(morse_alert)
+        return proc
+
     def stop(self) -> None:
         """Stop all pipelines gracefully."""
         self._is_running.clear()
