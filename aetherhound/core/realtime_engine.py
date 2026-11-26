@@ -57,6 +57,10 @@ class EngineTelemetry:
     acoustic_detected_pulses: int = 0
     acoustic_status: str = "NORMAL"
     morse_status: str = "NO PATTERN"
+    baseline_model_status: str = "NOT TRAINED"
+    anomaly_score: Optional[float] = None
+    anomaly_threshold: Optional[float] = None
+    anomaly_status: str = "NOT EVALUATED"
 
     # Recent Event Lists
     recent_events: List[Dict[str, str]] = field(default_factory=list)

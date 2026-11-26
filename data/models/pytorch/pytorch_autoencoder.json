@@ -1,0 +1,25 @@
+{
+  "detector_type": "pytorch_autoencoder",
+  "model_version": "aetherhound-pytorch-autoencoder-v1",
+  "framework": "torch",
+  "framework_version": "2.0.1+cpu",
+  "feature_names": [
+    "rms",
+    "peak",
+    "crest_factor",
+    "dominant_frequency",
+    "spectral_centroid",
+    "spectral_bandwidth",
+    "spectral_flatness"
+  ],
+  "threshold": 2.215305137634277,
+  "threshold_method": "normal validation 95.0th percentile",
+  "timestamp": "2026-11-26T09:14:13Z",
+  "training": {
+    "normal_only": true,
+    "seed": 2026,
+    "epochs": 30,
+    "train_fraction": 0.8,
+    "percentile": 95.0
+  }
+}

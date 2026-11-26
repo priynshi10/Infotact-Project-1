@@ -298,6 +298,8 @@ class RFCaptureDevice:
             SOURCE_TYPE_LIVE_HARDWARE,
             SOURCE_TYPE_RECORDED_HARDWARE,
             SOURCE_TYPE_SYNTHETIC_SIMULATION,
+            SOURCE_TYPE_VIRTUAL_SDR,
+            SOURCE_TYPE_VIRTUAL_SDR,
             build_rf_metadata,
             compute_array_sha256,
             save_metadata,

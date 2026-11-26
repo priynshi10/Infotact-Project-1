@@ -1,0 +1,13 @@
+[Unit]
+Description=AetherHound Virtual SDR Headless Monitor
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/aetherhound
+ExecStart=/opt/aetherhound/.venv/bin/python -m aetherhound.scripts.virtual_sdr_demo --backend python --seconds 86400
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

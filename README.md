@@ -1,4 +1,35 @@
 # AETHERHOUND
+## Mid-Review Software Commands
+
+```powershell
+
+## Virtual SDR and Raspberry Pi support
+
+```powershell
+python -m aetherhound.scripts.virtual_sdr_demo --backend python --seconds 5
+python -m aetherhound.scripts.system_monitor --seconds 1
+python -m aetherhound.scripts.arm64_compat
+```powershell
+python -m pytest -q
+python -m aetherhound.scripts.week1_demo --check-dependencies
+python -m aetherhound.scripts.week1_demo --mode software --duration 8
+python -m aetherhound.scripts.week1_demo --mode acoustic --non-interactive
+python -m aetherhound.interface.live_monitor --mode demo --signal rf --seconds 5
+python -m aetherhound.scripts.ml_demo generate-data
+python -m aetherhound.scripts.ml_demo train --count 200 --seed 2026 --percentile 95 --model-dir data/models/anomaly
+python -m aetherhound.scripts.ml_demo score --model-dir data/models/anomaly
+python -m aetherhound.scripts.ml_demo train --detector pytorch_autoencoder --count 200 --epochs 30 --model-dir data/models/anomaly
+python -m aetherhound.scripts.ml_demo score --detector pytorch_autoencoder --model-dir data/models/anomaly
+python -m aetherhound.scripts.ml_demo evaluate --detector pytorch_autoencoder --model-dir data/models/anomaly --count 50 --seed 9090
+python -m aetherhound.scripts.ml_demo status --model-dir data/models/anomaly
+```
+
+Synthetic demos require no physical hardware. Device and GNU Radio readiness:
+
+```powershell
+python -m aetherhound.hardware.device_check
+python -m aetherhound.scripts.capability_check
+```
 ## Air-Gapped RF & Acoustic Covert Channel Detector
 **Development Phase:** WEEK 1 – Real-Time Hardware Acquisition, Signal Processing & Covert Pattern Detection \
 **Target Environment:** Linux, Raspberry Pi 4 / Raspberry Pi 5, x86_64 Debian/Ubuntu \

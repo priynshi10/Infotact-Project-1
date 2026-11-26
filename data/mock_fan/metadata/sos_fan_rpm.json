@@ -1,15 +1,15 @@
 {
-  "plot_path": "data/plots/acoustic_spectrogram/sos_fan_rpm.png",
+  "plot_path": "data\\plots\\acoustic_spectrogram\\sos_fan_rpm.png",
   "source_mode": "SYNTHETIC SIMULATION",
   "sensor_id": "FAN-SIM-01 (SOFTWARE MODEL)",
-  "capture_timestamp_iso": "2026-11-12T18:20:18Z",
-  "capture_timestamp_epoch": 1794507618.4217188,
+  "capture_timestamp_iso": "2026-11-26T09:17:03Z",
+  "capture_timestamp_epoch": 1795684623.9391253,
   "sample_rate_hz": 50.0,
   "center_freq_hz": null,
   "recording_duration_sec": 7.4,
   "sample_count": 371,
-  "raw_data_path": "data/mock_fan/rpm/sos_fan_rpm_timeline.csv",
-  "raw_data_sha256": "f6f3ef519a3f2f5a9e9085862caf6aa653e9ccd4c4f1f550bb04a49813bcc45c",
+  "raw_data_path": "P:\\Infotact-Project\\data\\mock_fan\\rpm\\sos_fan_rpm_timeline.csv",
+  "raw_data_sha256": "d166d47f34889ba3c93268dabf5231f30192c164d17cdd24aa797e7d4be9113a",
   "device_verified": false,
   "detection_event_type": "FAN_RPM_SIMULATION",
   "metrics": {
@@ -18,5 +18,25 @@
     "high_rpm": 1800.0,
     "message": "SOS"
   },
-  "notes": "Software simulation of aerodynamic fan speed profile for laboratory detection calibration."
+  "notes": "Software simulation of aerodynamic fan speed profile for laboratory detection calibration. RPM values are SIMULATED.",
+  "capture_id": "FANSIM-20261126T091703Z-2DD0BF4A",
+  "modality": "FAN_SIMULATION",
+  "source_type": "SYNTHETIC_SIMULATION",
+  "data_source": "SYNTHETIC SIMULATION",
+  "acquisition_mode": "Software Aerodynamic Simulation (No Tachometer)",
+  "rf_gain": null,
+  "fft_size": null,
+  "channels": null,
+  "audio_format": null,
+  "simulation_parameters": {
+    "message": "SOS",
+    "base_rpm": 1200.0,
+    "low_rpm": 900.0,
+    "high_rpm": 1800.0,
+    "dot_duration_sec": 0.2,
+    "dash_duration_sec": 0.6,
+    "element_gap_sec": 0.2,
+    "letter_gap_sec": 0.6000000000000001,
+    "time_step_sec": 0.02
+  }
 }

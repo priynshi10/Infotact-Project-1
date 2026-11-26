@@ -47,6 +47,8 @@ class LiveMonitorInterface:
         operating_mode: Literal["DEMO", "FILE", "HARDWARE"] = "DEMO",
         signal_type: Literal["ACOUSTIC", "RF"] = "RF",
         input_path: Optional[str] = None,
+        detector_type: str = "numpy_baseline",
+        model_dir: str = "data/models/anomaly",
     ):
         self.engine = engine
         self.refresh_rate_hz = refresh_rate_hz
@@ -55,10 +57,30 @@ class LiveMonitorInterface:
         self.operating_mode = operating_mode
         self.signal_type = signal_type
         self.input_path = input_path
+        self.detector_type = detector_type
+        self.model_dir = model_dir
+        self.detector = None
+        self._load_detector()
+
+    def _load_detector(self) -> None:
+        try:
+            if self.detector_type == "pytorch_autoencoder":
+                from aetherhound.detection.anomaly_detector import PyTorchAutoencoderDetector
+                self.detector = PyTorchAutoencoderDetector.load(self.model_dir)
+            else:
+                from aetherhound.detection.anomaly_detector import NumPyAnomalyDetector
+                self.detector = NumPyAnomalyDetector.load(self.model_dir)
+        except (FileNotFoundError, RuntimeError, ValueError):
+            self.detector = None
 
     def build_layout(self, tel: EngineTelemetry) -> Layout:
         """Construct the Rich terminal layout tree."""
         layout = Layout()
+        tel.baseline_model_status = (
+            f"{self.detector_type}: TRAINED"
+            if self.detector is not None
+            else f"{self.detector_type}: NOT TRAINED"
+        )
 
         # Main vertical split: Header, Body, Events, Footer
         layout.split_column(
@@ -127,6 +149,10 @@ class LiveMonitorInterface:
         det_table.add_row("[bold]RF CHANNEL:[/bold]", rf_alert_str)
         det_table.add_row("[bold]ACOUSTIC BURST:[/bold]", ac_alert_str)
         det_table.add_row("[bold]MORSE SEQUENCE:[/bold]", morse_alert_str)
+        det_table.add_row("[bold]ML BASELINE:[/bold]", tel.baseline_model_status)
+        if tel.anomaly_score is not None and tel.anomaly_threshold is not None:
+            det_table.add_row("[bold]ML SCORE:[/bold]", f"{tel.anomaly_score:.6f} / {tel.anomaly_threshold:.6f}")
+            det_table.add_row("[bold]ML STATUS:[/bold]", tel.anomaly_status)
         det_table.add_row("", "")
         det_table.add_row("[dim]Target Signature:[/dim]", "[dim]SOS (... --- ...)[/dim]")
         det_table.add_row("[dim]Threat Vector:[/dim]", "[dim]CPU Fan PWM Covert Exfil[/dim]")
@@ -410,6 +436,8 @@ if __name__ == "__main__":
     parser.add_argument("--input", dest="input_path", help="WAV or NPY evidence file for file mode")
     parser.add_argument("--refresh", type=float, default=4.0)
     parser.add_argument("--seconds", type=float, default=None)
+    parser.add_argument("--detector", choices=("numpy_baseline", "pytorch_autoencoder"), default="numpy_baseline")
+    parser.add_argument("--model-dir", default="data/models/anomaly")
     args = parser.parse_args()
 
     cfg = HardwareConfig()
@@ -441,6 +469,8 @@ if __name__ == "__main__":
         operating_mode=operating_mode,
         signal_type=args.signal.upper(),
         input_path=args.input_path,
+        detector_type=args.detector,
+        model_dir=args.model_dir,
     )
     print("Launching AetherHound Live Terminal Monitor...")
     monitor.run(max_seconds=args.seconds)

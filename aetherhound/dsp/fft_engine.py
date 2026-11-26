@@ -49,6 +49,8 @@ def compute_real_fft(
         return np.array([], dtype=float), np.array([], dtype=float)
     if values.ndim != 1:
         raise ValueError("Samples must be a one-dimensional array")
+    if not np.all(np.isfinite(values)):
+        raise ValueError("Samples contain NaN or Inf")
     if not np.isfinite(sample_rate_hz) or sample_rate_hz <= 0:
         raise ValueError("Sample rate must be positive")
     if fft_size < 2:
@@ -107,6 +109,8 @@ def compute_complex_fft(
         return np.array([], dtype=float), np.array([], dtype=complex)
     if iq_samples.ndim != 1:
         raise ValueError("IQ samples must be a one-dimensional array")
+    if not np.all(np.isfinite(iq_samples)):
+        raise ValueError("IQ samples contain NaN or Inf")
     n = len(iq_samples)
     if n > fft_size:
         # Use first fft_size samples or segment average
@@ -162,6 +166,17 @@ def compute_welch_psd(
     """
     Compute averaged Welch Power Spectral Density.
     """
+    values = np.asarray(samples)
+    if values.size == 0:
+        return np.array([], dtype=float), np.array([], dtype=float)
+    if values.ndim != 1:
+        raise ValueError("Samples must be a one-dimensional array")
+    if not np.isfinite(sample_rate_hz) or sample_rate_hz <= 0:
+        raise ValueError("Sample rate must be positive")
+    if not np.all(np.isfinite(values)):
+        raise ValueError("Samples contain NaN or Inf")
+    if nperseg < 2:
+        raise ValueError("nperseg must be at least 2")
     return_onesided = not is_complex
     f, psd = signal.welch(
         samples,

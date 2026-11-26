@@ -1,21 +1,31 @@
 {
-  "plot_path": "data/plots/rf_spectrum/synthetic_rf_anomaly.png",
+  "plot_path": "data\\plots\\rf_spectrum\\synthetic_rf_anomaly.png",
   "source_mode": "SYNTHETIC SIMULATION",
   "sensor_id": "SDR-01 (SYNTHETIC IQ BUFFER)",
-  "capture_timestamp_iso": "2026-11-12T18:20:38Z",
-  "capture_timestamp_epoch": 1794507638.776784,
+  "capture_timestamp_iso": "2026-11-26T09:17:45Z",
+  "capture_timestamp_epoch": 1795684665.2821705,
   "sample_rate_hz": 2048000.0,
   "center_freq_hz": 433920000.0,
   "recording_duration_sec": 0.008,
   "sample_count": 16384,
-  "raw_data_path": "/app/applet/data/rf/raw/synthetic_rf_anomaly_iq.npy",
-  "raw_data_sha256": "c483c0693585a3c83e853c3dcc4276dcc615b86a7a43677bc0bb362877238d44",
+  "raw_data_path": "P:\\Infotact-Project\\data\\rf\\raw\\synthetic_rf_anomaly_iq.npy",
+  "raw_data_sha256": "4a89e67f52e42cb8fa4f9cf99bcf1bd7191a22baf2276c38059ccdb9e6ba5e7f",
   "device_verified": false,
-  "detection_event_type": "RF_SPECTRAL_ANOMALY",
+  "detection_event_type": null,
   "metrics": {
-    "noise_floor_db": -57.85,
-    "peak_freq_hz": 434070000.0,
-    "peak_power_db": -47.57
+    "noise_floor_db": -117.81,
+    "peak_freq_hz": 0.0,
+    "peak_power_db": 0.0
   },
-  "notes": "Generated via AetherHound DSP FFT engine. Source validated as SYNTHETIC SIMULATION."
+  "notes": "Generated via AetherHound DSP FFT engine (Synthetic Complex IQ Simulation). Source tagged as SYNTHETIC SIMULATION.",
+  "capture_id": "RF-20261126T091745Z-BA11A7A4",
+  "modality": "RF",
+  "source_type": "SYNTHETIC_SIMULATION",
+  "data_source": "SYNTHETIC SIMULATION",
+  "acquisition_mode": "Synthetic Complex IQ Simulation",
+  "rf_gain": "auto",
+  "fft_size": 2048,
+  "channels": null,
+  "audio_format": null,
+  "simulation_parameters": null
 }

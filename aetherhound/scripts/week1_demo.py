@@ -338,6 +338,11 @@ def run_software_mode(config: HardwareConfig, duration: int = 8) -> None:
 def main():
     parser = argparse.ArgumentParser(description="AetherHound SIGINT Demonstration")
     parser.add_argument(
+        "--check-dependencies",
+        action="store_true",
+        help="Print dependency/GNU Radio capability and exit",
+    )
+    parser.add_argument(
         "--mode",
         choices=["auto", "hardware", "acoustic", "software"],
         default="auto",
@@ -347,6 +352,15 @@ def main():
     parser.add_argument("--non-interactive", action="store_true", help="Run without interactive prompts")
 
     args = parser.parse_args()
+    if args.check_dependencies:
+        from aetherhound.scripts.capability_check import capability_report
+        report = capability_report()
+        for name in ("numpy", "scipy", "torch", "tensorflow", "gnuradio", "rtlsdr", "pyaudio", "soundfile", "rich"):
+            status = "AVAILABLE" if report[name] else "UNAVAILABLE"
+            print(f"{name}: {status}")
+        if not report["gnuradio"]:
+            print("native GNU Radio unavailable; Python DSP fallback active; install/configure GNU Radio to enable native flowgraph")
+        return
     config = HardwareConfig()
 
     if args.mode == "auto":

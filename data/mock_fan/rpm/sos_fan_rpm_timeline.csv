@@ -1,4 +1,4 @@
-time_sec,rpm,is_pulse
+time_sec,simulated_rpm,is_pulse
 0.0000,1200.00,0
 0.0200,1200.00,0
 0.0400,1200.00,0

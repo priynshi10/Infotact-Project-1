@@ -142,3 +142,27 @@ def test_cli_file_loader_integrates_wav_with_acoustic_engine(tmp_path):
     assert len(frames) > 0
     processed = engine.process_external_acoustic_chunk(frames[0])
     assert processed.filtered_samples.ndim == 1
+
+
+def test_gnuradio_explicit_backend_missing_dependency(monkeypatch):
+    monkeypatch.setattr(
+        "aetherhound.dsp.flowgraph.find_spec",
+        lambda name: None,
+    )
+    flowgraph = SignalProcessingFlowgraph(
+        "rf", 2048000.0, backend="gnuradio",
+    )
+    with pytest.raises(RuntimeError, match="GNU Radio unavailable"):
+        flowgraph.initialize()
+
+
+def test_gnuradio_auto_backend_falls_back(monkeypatch):
+    monkeypatch.setattr(
+        "aetherhound.dsp.flowgraph.find_spec",
+        lambda name: None,
+    )
+    flowgraph = SignalProcessingFlowgraph(
+        "rf", 2048000.0, backend="auto",
+    )
+    selected = flowgraph.initialize()
+    assert "PYTHON" in selected

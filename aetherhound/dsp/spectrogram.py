@@ -15,6 +15,8 @@ class RollingWaterfallBuffer:
     """
 
     def __init__(self, max_rows: int = 128, num_bins: int = 512):
+        if max_rows < 1 or num_bins < 1:
+            raise ValueError("max_rows and num_bins must be positive")
         self.max_rows = max_rows
         self.num_bins = num_bins
         self._buffer = deque(maxlen=max_rows)

@@ -6,6 +6,7 @@ library checks, and readiness assessment.
 
 from dataclasses import dataclass, field
 import sys
+import platform
 from typing import Dict, List, Optional, Tuple
 
 from aetherhound.hardware.config import HardwareConfig, RFConfig, AcousticConfig
@@ -39,6 +40,20 @@ class DiagnosticResult:
 def check_libraries() -> Dict[str, LibraryStatus]:
     """Check availability and versions of all critical libraries."""
     status: Dict[str, LibraryStatus] = {}
+    status["Python"] = LibraryStatus(name="Python", available=True, version=sys.version.split()[0])
+    status["Operating System"] = LibraryStatus(name="Operating System", available=True, version=platform.platform())
+
+    try:
+        import gnuradio
+        status["GNU Radio"] = LibraryStatus(name="GNU Radio", available=True, version=getattr(gnuradio, "__version__", "installed"))
+    except Exception as e:
+        status["GNU Radio"] = LibraryStatus(name="GNU Radio", available=False, error_message="GNU Radio unavailable")
+
+    try:
+        import torch
+        status["PyTorch"] = LibraryStatus(name="PyTorch", available=True, version=torch.__version__)
+    except Exception as e:
+        status["PyTorch"] = LibraryStatus(name="PyTorch", available=False, error_message="PyTorch unavailable")
 
     # NumPy
     try:

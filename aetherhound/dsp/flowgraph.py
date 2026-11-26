@@ -35,6 +35,7 @@ class SignalProcessingFlowgraph:
         frame_size: int = 512,
         overlap: int = 256,
         prefer_gnuradio: bool = False,
+        backend: Optional[str] = None,
     ) -> None:
         self.signal_type = signal_type
         self.sample_rate_hz = float(sample_rate_hz)
@@ -46,12 +47,88 @@ class SignalProcessingFlowgraph:
         self.overlap = int(overlap)
         self.prefer_gnuradio = prefer_gnuradio
         self._gnu_available = find_spec("gnuradio") is not None
+        self.backend_selector = "gnuradio" if backend == "gnuradio" else ("auto" if backend == "auto" else "python")
+        self._initialized = False
+        self._gnuradio_module = None
+        self._gnuradio_flowgraph = None
 
     @property
     def backend(self) -> str:
-        if self.prefer_gnuradio and self._gnu_available:
-            return "GNU RADIO (DETECTED; PYTHON DSP FALLBACK EXECUTING)"
+        if self._initialized and self._gnuradio_flowgraph is not None:
+            return "GNU RADIO (INITIALIZED; RECEIVE FLOWGRAPH)"
+        if self.backend_selector == "gnuradio":
+            return "GNU RADIO (NOT INITIALIZED)"
         return "PYTHON NUMPY/SCIPY FALLBACK"
+
+    def initialize(self) -> str:
+        """Initialize the explicit backend; GNU Radio hardware is receive-only."""
+        if self.backend_selector in ("python",) and not self.prefer_gnuradio:
+            self._initialized = True
+            return self.backend
+        if not self._gnu_available:
+            if self.backend_selector == "gnuradio":
+                raise RuntimeError(
+                    "native GNU Radio unavailable; GNU Radio mode was requested explicitly"
+                )
+            self.backend_selector = "python"
+            self._initialized = True
+            return self.backend
+        try:
+            import gnuradio
+            gr = __import__("gnuradio.gr", fromlist=["top_block"])
+            self._gnuradio_module = gnuradio
+            self._gnuradio_flowgraph = gr.top_block("aetherhound_receive")
+            try:
+                from gnuradio import blocks, filter
+                source_samples = self.synthetic_source(duration_sec=0.02)
+                source = blocks.vector_source_c(
+                    [complex(value) for value in source_samples],
+                    False,
+                    1,
+                )
+                cutoff = min(float(self.cutoff_hz), float(self.sample_rate_hz) * 0.45)
+                taps = filter.firdes.low_pass(
+                    1.0,
+                    float(self.sample_rate_hz),
+                    cutoff,
+                    max(1.0, float(self.sample_rate_hz) * 0.05),
+                )
+                lowpass = filter.fir_filter_ccf(1, taps)
+                sink = blocks.vector_sink_c()
+                self._gnuradio_flowgraph.connect(source, lowpass)
+                self._gnuradio_flowgraph.connect(lowpass, sink)
+                self._gnuradio_sink = sink
+            except Exception as exc:
+                raise RuntimeError(f"GNU Radio receive blocks unavailable: {exc}") from exc
+            self._initialized = True
+            return self.backend
+        except Exception as exc:
+            if self.backend_selector == "gnuradio":
+                raise RuntimeError(f"GNU Radio initialization failed: {exc}") from exc
+            self.backend_selector = "python"
+            self._initialized = True
+            return self.backend
+
+    def start(self) -> None:
+        if self._gnuradio_flowgraph is None:
+            raise RuntimeError("GNU Radio flowgraph is not initialized")
+        if hasattr(self._gnuradio_flowgraph, "start"):
+            self._gnuradio_flowgraph.start()
+
+    def wait(self) -> None:
+        if self._gnuradio_flowgraph is None:
+            raise RuntimeError("GNU Radio flowgraph is not initialized")
+        if hasattr(self._gnuradio_flowgraph, "wait"):
+            self._gnuradio_flowgraph.wait()
+
+    def stop(self) -> None:
+        if self._gnuradio_flowgraph is not None:
+            if hasattr(self._gnuradio_flowgraph, "stop"):
+                self._gnuradio_flowgraph.stop()
+            if hasattr(self._gnuradio_flowgraph, "wait"):
+                self._gnuradio_flowgraph.wait()
+            self._gnuradio_flowgraph = None
+        self._initialized = False
 
     def synthetic_source(self, duration_sec: float = 1.0, noise: float = 0.02) -> np.ndarray:
         """Generate a hardware-independent acoustic or complex-RF source."""
